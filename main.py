@@ -13,9 +13,7 @@ Użycie:
 
 import sys
 from config import logger
-from scheduler import harmonogram
-from test_functions import test_publikacji
-from google_sheets import test_parsowania_dat
+from scheduler_new import create_scheduler, create_test_scheduler
 
 
 def main():
@@ -28,20 +26,33 @@ def main():
             
             if command == "test":
                 logger.info("🧪 Uruchamianie testu publikacji")
-                test_publikacji()
+                test_scheduler = create_test_scheduler()
+                test_scheduler.test_publication()
             elif command == "dates":
                 logger.info("📅 Uruchamianie testu parsowania dat")
-                test_parsowania_dat()
+                test_scheduler = create_test_scheduler()
+                test_scheduler.test_data_parsing()
+            elif command == "data":
+                logger.info("📊 Uruchamianie testu ładowania danych")
+                test_scheduler = create_test_scheduler()
+                test_scheduler.test_data_loading()
+            elif command == "once":
+                logger.info("🎯 Uruchamianie jednorazowej publikacji")
+                scheduler = create_scheduler()
+                scheduler.run_once()
             else:
                 print("❌ Nieznana komenda!")
                 print("\nDostępne opcje:")
                 print("  python main.py          - uruchom harmonogram")
                 print("  python main.py test     - test publikacji")
                 print("  python main.py dates    - test parsowania dat")
+                print("  python main.py data     - test ładowania danych")
+                print("  python main.py once     - jednorazowa publikacja")
                 return
         else:
             logger.info("⏰ Uruchamianie harmonogramu publikacji")
-            harmonogram()
+            scheduler = create_scheduler()
+            scheduler.start()
             
     except KeyboardInterrupt:
         logger.info("👋 Program zatrzymany przez użytkownika")
