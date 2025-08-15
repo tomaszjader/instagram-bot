@@ -67,19 +67,56 @@ python main.py test
 python main.py dates
 ```
 
+### Test ładowania danych
+```bash
+python main.py data
+```
+
+### Jednorazowa publikacja
+```bash
+python main.py once
+```
+
+### Status schedulera
+```bash
+python main.py status
+```
+
+### Pomoc
+```bash
+python main.py help
+```
+
 ## 📁 Struktura projektu
 
 ```
 ├── main.py              # Główny plik uruchomieniowy
 ├── config.py            # Konfiguracja i zmienne środowiskowe
-├── scheduler.py         # Logika harmonogramowania
+├── scheduler.py         # Scheduler oparty na klasach
+├── models.py            # Modele danych (Post, ColumnMapper)
+├── services.py          # Logika biznesowa (serwisy)
 ├── instagram.py         # Integracja z Instagram API
 ├── google_sheets.py     # Integracja z Google Sheets API
 ├── telegram_bot.py      # Powiadomienia Telegram
 ├── image_utils.py       # Przetwarzanie obrazów
-├── test_functions.py    # Funkcje testowe
 └── requirements.txt     # Zależności projektu
 ```
+
+## 🏗️ Architektura
+
+Projekt został zrefaktoryzowany z monolitycznej struktury na architekturę opartą na klasach:
+
+- **models.py** - Modele danych (`Post`, `ColumnMapper`)
+- **services.py** - Serwisy biznesowe (`DataService`, `ImageService`, `NotificationService`, `PublisherService`)
+- **scheduler.py** - Scheduler (`Scheduler`, `TestScheduler`)
+- **main.py** - Punkt wejścia z rozszerzonymi opcjami
+
+### Korzyści refaktoryzacji:
+- ✅ Single Responsibility Principle
+- ✅ Łatwiejsze testowanie jednostkowe
+- ✅ Lepsza skalowalność
+- ✅ Prostsze debugowanie
+- ✅ Czytelniejszy kod
 
 ## ⚙️ Konfiguracja API
 
