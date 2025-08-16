@@ -90,6 +90,8 @@ python main.py help
 ## 📁 Struktura projektu
 
 ```
+├── .gitignore           # Pliki ignorowane przez Git
+├── README.md            # Dokumentacja projektu
 ├── main.py              # Główny plik uruchomieniowy
 ├── config.py            # Konfiguracja i zmienne środowiskowe
 ├── scheduler.py         # Scheduler oparty na klasach
@@ -110,6 +112,11 @@ Projekt został zrefaktoryzowany z monolitycznej struktury na architekturę opar
 - **services.py** - Serwisy biznesowe (`DataService`, `ImageService`, `NotificationService`, `PublisherService`)
 - **scheduler.py** - Scheduler (`Scheduler`, `TestScheduler`)
 - **main.py** - Punkt wejścia z rozszerzonymi opcjami
+- **config.py** - Zarządzanie konfiguracją środowiska
+- **instagram.py** - Obsługa publikacji na Instagram
+- **google_sheets.py** - Integracja z Google Sheets
+- **telegram_bot.py** - Powiadomienia przez Telegram
+- **image_utils.py** - Przetwarzanie i optymalizacja obrazów
 
 ### Korzyści refaktoryzacji:
 - ✅ Single Responsibility Principle
@@ -117,6 +124,7 @@ Projekt został zrefaktoryzowany z monolitycznej struktury na architekturę opar
 - ✅ Lepsza skalowalność
 - ✅ Prostsze debugowanie
 - ✅ Czytelniejszy kod
+- ✅ Usunięte duplikacje kodu
 
 ## ⚙️ Konfiguracja API
 
@@ -135,7 +143,7 @@ Projekt został zrefaktoryzowany z monolitycznej struktury na architekturę opar
 ## 🕐 Harmonogram
 
 Domyślnie system sprawdza posty do publikacji codziennie o **16:00**. 
-Można to zmienić w pliku `scheduler.py` w linii:
+Można to zmienić w pliku `scheduler.py` w metodzie `run()` klasy `Scheduler`:
 ```python
 target_time = dt_time(16, 0)  # Zmień na wybraną godzinę
 ```
@@ -171,8 +179,9 @@ target_time = dt_time(16, 0)  # Zmień na wybraną godzinę
 
 ### Błędy Google Sheets API
 - Sprawdź czy arkusz jest publiczny lub udostępniony
-- Zweryfikuj poprawność Google Sheet ID
+- Zweryfikuj poprawność Google Sheet ID w pliku `.env`
 - Upewnij się, że API Key ma odpowiednie uprawnienia
+- Sprawdź czy kolumny w arkuszu mają poprawne nazwy
 
 ### Problemy z obrazami
 - Sprawdź czy URL jest dostępny publicznie
