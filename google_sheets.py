@@ -1,10 +1,12 @@
 import requests
 import re
 from datetime import datetime, timedelta
+from typing import Optional, Union, Any, List, Dict
 from config import GOOGLE_API_KEY, GOOGLE_SHEET_ID, logger
+from utils import retry_with_backoff, google_sheets_rate_limiter
 
 
-def gdrive_to_direct(url):
+def gdrive_to_direct(url: str) -> str:
     """Konwertuje URL Google Drive na bezpośredni link do pobierania"""
     match = re.search(r'/d/([a-zA-Z0-9_-]+)', url)
     if match:
@@ -13,7 +15,7 @@ def gdrive_to_direct(url):
     return url
 
 
-def parsuj_date_value(date_value):
+def parsuj_date_value(date_value: Union[str, int, float, None]) -> Optional[datetime]:
     """Parsuje wartość daty z Google Sheets (może być string lub liczba)"""
     if not date_value:
         return None
@@ -56,9 +58,16 @@ def parsuj_date_value(date_value):
     return None
 
 
-def pobierz_zdjecia_z_arkusza(sheet_id):
-    """Pobiera wszystkie zdjęcia z arkusza Google Sheets"""
+@retry_with_backoff(
+    max_retries=3,
+    base_delay=2.0,
+    exceptions=(requests.RequestException, requests.HTTPError)
+)
+def pobierz_zdjecia_z_arkusza(sheet_id: str) -> Dict[str, str]:
+    """Pobiera wszystkie zdjęcia z arkusza Google Sheets z retry mechanism"""
     try:
+        google_sheets_rate_limiter.wait_if_needed()
+        
         # Pobierz metadane arkusza zawierające informacje o obrazkach
         url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}"
         params = {
@@ -66,7 +75,7 @@ def pobierz_zdjecia_z_arkusza(sheet_id):
             'includeGridData': 'true'
         }
 
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
 
         data = response.json()
@@ -99,7 +108,7 @@ def pobierz_zdjecia_z_arkusza(sheet_id):
         return {}
 
 
-def znajdz_zdjecie_dla_wiersza(sheet_id, row_index):
+def znajdz_zdjecie_dla_wiersza(sheet_id: str, row_index: int) -> Optional[str]:
     """Znajduje zdjęcie dla konkretnego wiersza"""
     try:
         # Pobierz wszystkie obrazki z arkusza
@@ -125,16 +134,23 @@ def znajdz_zdjecie_dla_wiersza(sheet_id, row_index):
         return None
 
 
-def wczytaj_arkusz(sheet_id):
-    """Wczytuje dane z arkusza Google Sheets używając Google API Key"""
+@retry_with_backoff(
+    max_retries=3,
+    base_delay=2.0,
+    exceptions=(requests.RequestException, requests.HTTPError)
+)
+def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
+    """Wczytuje dane z arkusza Google Sheets z retry mechanism"""
     try:
+        google_sheets_rate_limiter.wait_if_needed()
+        
         url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/A:Z"
         params = {
             'key': GOOGLE_API_KEY,
             'valueRenderOption': 'FORMATTED_VALUE'  # Zmieniono na FORMATTED_VALUE dla lepszego parsowania dat
         }
 
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=30)
         response.raise_for_status()
 
         data = response.json()
@@ -172,7 +188,7 @@ def wczytaj_arkusz(sheet_id):
         raise
 
 
-def test_parsowania_dat():
+def test_parsowania_dat() -> None:
     """Testuje parsowanie dat z arkusza"""
     try:
         dane = wczytaj_arkusz(GOOGLE_SHEET_ID)

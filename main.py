@@ -19,6 +19,7 @@ Użycie:
 import sys
 from config import logger
 from scheduler import create_scheduler, create_test_scheduler
+from monitoring import metrics_collector, HealthCheckServer
 
 
 def show_usage():
@@ -52,6 +53,16 @@ def show_scheduler_status():
 
 def main():
     """Główna funkcja programu"""
+    # Uruchom serwer health check w tle
+    health_server = None
+    try:
+        health_port = 8080
+        health_server = HealthCheckServer(metrics_collector, port=health_port)
+        health_thread = health_server.start_in_background()
+        logger.info(f"🏥 Serwer health check uruchomiony na porcie {health_port}")
+    except Exception as e:
+        logger.warning(f"⚠️ Nie udało się uruchomić serwera health check: {e}")
+    
     try:
         logger.info("🚀 Instagram Auto Publisher - Refaktoryzowana Wersja")
         
@@ -60,6 +71,7 @@ def main():
             
             if command == "test":
                 logger.info("🧪 Uruchamianie testu publikacji")
+                metrics_collector.update_scheduler_status('testing')
                 test_scheduler = create_test_scheduler()
                 success = test_scheduler.test_publication()
                 print(f"\n{'✅ Test zakończony sukcesem!' if success else '❌ Test zakończony niepowodzeniem!'}")
@@ -76,6 +88,7 @@ def main():
                 
             elif command == "once":
                 logger.info("🎯 Uruchamianie jednorazowej publikacji")
+                metrics_collector.update_scheduler_status('running_once')
                 scheduler = create_scheduler()
                 scheduler.run_once()
                 
@@ -95,15 +108,21 @@ def main():
             print("\n🎯 Uruchamianie schedulera opartego na klasach...")
             print("💡 Użyj 'python main.py help' aby zobaczyć wszystkie opcje")
             
+            metrics_collector.update_scheduler_status('starting')
             scheduler = create_scheduler()
             scheduler.start()
+            metrics_collector.update_scheduler_status('running')
             
     except KeyboardInterrupt:
         logger.info("👋 Program zatrzymany przez użytkownika")
+        metrics_collector.update_scheduler_status('interrupted')
         print("\n✨ Dziękujemy za korzystanie z Instagram Auto Publisher!")
     except Exception as e:
         logger.error(f"❌ Błąd krytyczny: {e}")
+        metrics_collector.update_scheduler_status('error')
         raise
+    finally:
+        metrics_collector.update_scheduler_status('stopped')
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, date
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from config import logger
 from google_sheets import parsuj_date_value
 
@@ -48,7 +48,7 @@ class ColumnMapper:
     PUBLISHED_KEYS = ['czy_opublikowano', 'opublikowano', 'published', 'status']
     
     @classmethod
-    def find_value_by_keys(cls, row: Dict[str, Any], possible_keys: list) -> str:
+    def find_value_by_keys(cls, row: Dict[str, Any], possible_keys: List[str]) -> str:
         """Znajduje wartość w wierszu na podstawie możliwych nazw kluczy"""
         for key in possible_keys:
             if key in row and row[key] and str(row[key]).strip() and str(row[key]).strip() != 'nan':

@@ -7,38 +7,66 @@ from datetime import datetime
 
 from config import (
     GOOGLE_SHEET_ID, INSTA_USERNAME, INSTA_PASSWORD, 
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, logger
+    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, logger, is_telegram_enabled, log_with_context
 )
 from models import Post, ColumnMapper
 from google_sheets import wczytaj_arkusz, znajdz_zdjecie_dla_wiersza
 from instagram import zaloguj_instagrama, opublikuj_post
 from telegram_bot import wyslij_telegram
 from image_utils import pobierz_domyslne_zdjecie
+from security import security_manager, ValidationResult
+from monitoring import metrics_collector
 
 
 class DataService:
     """Serwis odpowiedzialny za pobieranie i przetwarzanie danych z arkusza"""
     
-    def __init__(self, sheet_id: str):
+    def __init__(self, sheet_id: str) -> None:
         self.sheet_id = sheet_id
     
     def get_posts_from_sheet(self) -> List[Post]:
-        """Pobiera posty z arkusza i mapuje je na obiekty Post"""
+        """Pobiera posty z arkusza Google Sheets z walidacją bezpieczeństwa"""
         try:
-            logger.info("Pobieranie danych z arkusza...")
+            log_with_context('info', 'Pobieranie danych z arkusza', sheet_id=self.sheet_id)
+            
+            # Sprawdź rate limit dla Google Sheets
+            if not security_manager.check_google_sheets_rate_limit():
+                log_with_context('warning', 'Google Sheets rate limit exceeded, skipping data fetch')
+                metrics_collector.record_api_call('google_sheets', blocked=True)
+                return []
+            
+            # Rejestruj wywołanie API
+            metrics_collector.record_api_call('google_sheets')
+            
             dane = wczytaj_arkusz(self.sheet_id)
             posts = []
+            invalid_posts_count = 0
             
             for i, row in enumerate(dane):
-                post = ColumnMapper.map_row_to_post(row, i)
+                # Waliduj dane wiersza przed mapowaniem
+                validation_result = security_manager.validate_and_sanitize_post(row)
+                
+                if not validation_result.is_valid:
+                    invalid_posts_count += 1
+                    log_with_context('warning', 'Invalid post data detected', 
+                                   row_index=i, errors=validation_result.errors)
+                    continue
+                
+                # Użyj sanitized data jeśli dostępne
+                row_data = validation_result.sanitized_data if validation_result.sanitized_data else row
+                
+                post = ColumnMapper.map_row_to_post(row_data, i)
                 if post:
                     posts.append(post)
             
-            logger.info(f"Zmapowano {len(posts)} postów z arkusza")
+            log_with_context('info', 'Zmapowano posty z arkusza', 
+                           posts_count=len(posts), sheet_id=self.sheet_id,
+                           invalid_posts_count=invalid_posts_count)
             return posts
             
         except Exception as e:
             logger.error(f"Błąd podczas pobierania postów z arkusza: {e}")
+            security_manager.report_suspicious_activity('data_fetch_error', {'error': str(e)})
             raise
     
     def get_posts_for_today(self) -> List[Post]:
@@ -49,14 +77,15 @@ class DataService:
             if not post.czy_opublikowano and post.czy_do_publikacji_dzisiaj
         ]
         
-        logger.info(f"Znaleziono {len(today_posts)} postów do publikacji na dzisiaj")
+        log_with_context('info', 'Znaleziono posty do publikacji na dzisiaj', 
+                        today_posts_count=len(today_posts), total_posts=len(posts))
         return today_posts
 
 
 class ImageService:
     """Serwis odpowiedzialny za zarządzanie obrazami"""
     
-    def __init__(self, sheet_id: str):
+    def __init__(self, sheet_id: str) -> None:
         self.sheet_id = sheet_id
     
     def resolve_image_path(self, post: Post) -> Optional[str]:
@@ -94,24 +123,29 @@ class ImageService:
                     return przetworz_lokalny_obraz(post.sciezka_zdjecia)
             
             # Brak ścieżki - użyj domyślnego zdjęcia
-             logger.info("Brak ścieżki zdjęcia - używam domyślnego")
-             return self.get_default_image()
+            logger.info("Brak ścieżki zdjęcia - używam domyślnego")
+            return pobierz_domyslne_zdjecie()
              
-         except Exception as e:
-             logger.error(f"Błąd podczas przygotowywania zdjęcia: {e}")
-             # W przypadku błędu, spróbuj użyć domyślnego zdjęcia
-             return self.get_default_image()
+        except Exception as e:
+            logger.error(f"Błąd podczas przygotowywania zdjęcia: {e}")
+            # W przypadku błędu, spróbuj użyć domyślnego zdjęcia
+            return pobierz_domyslne_zdjecie()
 
 
 class NotificationService:
     """Serwis odpowiedzialny za wysyłanie powiadomień"""
     
-    def __init__(self, bot_token: str, chat_id: str):
+    def __init__(self, bot_token: Optional[str] = None, chat_id: Optional[str] = None) -> None:
         self.bot_token = bot_token
         self.chat_id = chat_id
+        self.telegram_enabled = is_telegram_enabled()
     
     def send_success_notification(self, post: Post, media, image_path: str) -> None:
         """Wysyła powiadomienie o pomyślnej publikacji"""
+        if not self.telegram_enabled:
+            logger.info("Telegram nie jest skonfigurowany - pomijam powiadomienie")
+            return
+            
         try:
             post_url = f"https://www.instagram.com/p/{media.code}/"
             
@@ -130,6 +164,10 @@ class NotificationService:
     
     def send_error_notification(self, post: Post, error: str) -> None:
         """Wysyła powiadomienie o błędzie publikacji"""
+        if not self.telegram_enabled:
+            logger.info("Telegram nie jest skonfigurowany - pomijam powiadomienie o błędzie")
+            return
+            
         try:
             message = f"❌ Błąd podczas publikacji wiersza {post.row_index + 2}: {error}"
             wyslij_telegram(self.bot_token, self.chat_id, message)
@@ -139,6 +177,10 @@ class NotificationService:
     
     def send_critical_error_notification(self, error: str) -> None:
         """Wysyła powiadomienie o błędzie krytycznym"""
+        if not self.telegram_enabled:
+            logger.error("Telegram nie jest skonfigurowany - nie można wysłać powiadomienia o krytycznym błędzie")
+            return
+            
         try:
             message = f"❌ <b>Błąd krytyczny:</b>\n{error}"
             wyslij_telegram(self.bot_token, self.chat_id, message)
@@ -150,7 +192,7 @@ class NotificationService:
 class PublisherService:
     """Główny serwis odpowiedzialny za publikację postów"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.data_service = DataService(GOOGLE_SHEET_ID)
         self.image_service = ImageService(GOOGLE_SHEET_ID)
         self.notification_service = NotificationService(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
@@ -163,37 +205,97 @@ class PublisherService:
             self.instagram_client = zaloguj_instagrama(INSTA_USERNAME, INSTA_PASSWORD)
     
     def publish_post(self, post: Post) -> bool:
-        """Publikuje pojedynczy post"""
+        """Publikuje pojedynczy post z zabezpieczeniami"""
         try:
+            # Sprawdź rate limit dla Instagram
+            if not security_manager.check_instagram_rate_limit():
+                log_with_context('warning', 'Instagram rate limit exceeded, skipping post publication',
+                               post_row=post.row_index + 2)
+                metrics_collector.record_api_call('instagram', blocked=True)
+                return False
+            
+            # Rejestruj wywołanie API
+            metrics_collector.record_api_call('instagram')
+            
+            # Dodatkowa walidacja posta przed publikacją
+            validation_result = security_manager.validate_and_sanitize_post({
+                'tresc_postu': post.tresc_postu,
+                'tagi': post.tagi,
+                'sciezka_zdjecia': post.sciezka_zdjecia
+            })
+            
+            if not validation_result.is_valid:
+                log_with_context('error', 'Post validation failed before publication',
+                               post_row=post.row_index + 2, errors=validation_result.errors)
+                security_manager.report_suspicious_activity('invalid_post_publication', 
+                                                          {'row': post.row_index, 'errors': validation_result.errors})
+                # Rejestruj nieudaną publikację
+                post_info = {
+                    'content_preview': post.tresc_postu[:50] + '...' if len(post.tresc_postu) > 50 else post.tresc_postu,
+                    'image_path': post.sciezka_zdjecia,
+                    'tags': post.tagi[:50] + '...' if len(post.tagi) > 50 else post.tagi
+                }
+                metrics_collector.record_post_failed(post_info, 'Validation failed')
+                return False
+            
             # Rozwiąż ścieżkę do obrazu
             image_path = self.image_service.resolve_image_path(post)
             if not image_path:
+                # Rejestruj nieudaną publikację
+                post_info = {
+                    'content_preview': post.tresc_postu[:50] + '...' if len(post.tresc_postu) > 50 else post.tresc_postu,
+                    'image_path': post.sciezka_zdjecia,
+                    'tags': post.tagi[:50] + '...' if len(post.tagi) > 50 else post.tagi
+                }
+                metrics_collector.record_post_failed(post_info, 'Brak ścieżki do obrazu')
                 raise Exception("Brak ścieżki do obrazu")
             
             # Publikuj post
-            logger.info(f"Publikowanie posta z wiersza {post.row_index + 2}")
-            logger.info(f"Zdjęcie: {image_path}")
-            logger.info(f"Opis: {post.pelny_opis[:100]}...")
+            log_with_context('info', 'Publishing post', 
+                           post_row=post.row_index + 2,
+                           image_path=image_path,
+                           content_length=len(post.pelny_opis))
             
             media = opublikuj_post(self.instagram_client, image_path, post.pelny_opis)
             
             # Wyślij powiadomienie o sukcesie
             self.notification_service.send_success_notification(post, media, image_path)
             
+            # Rejestruj udaną publikację
+            post_info = {
+                'content_preview': post.tresc_postu[:50] + '...' if len(post.tresc_postu) > 50 else post.tresc_postu,
+                'image_path': image_path,
+                'tags': post.tagi[:50] + '...' if len(post.tagi) > 50 else post.tagi,
+                'media_id': media.id if hasattr(media, 'id') else None,
+                'media_code': media.code if hasattr(media, 'code') else None
+            }
+            metrics_collector.record_post_published(post_info)
+            
             # Usuń tymczasowy plik jeśli został utworzony
             if image_path.startswith(tempfile.gettempdir()):
                 try:
                     os.remove(image_path)
-                    logger.info(f"Usunięto tymczasowy plik: {image_path}")
+                    log_with_context('info', 'Temporary file removed', file_path=image_path)
                 except Exception as e:
-                    logger.warning(f"Nie można usunąć tymczasowego pliku: {e}")
+                    log_with_context('warning', 'Failed to remove temporary file', 
+                                   file_path=image_path, error=str(e))
             
-            logger.info(f"Pomyślnie opublikowano post z wiersza {post.row_index + 2}")
+            log_with_context('info', 'Post published successfully', post_row=post.row_index + 2)
             return True
             
         except Exception as e:
-            logger.error(f"Błąd podczas publikacji posta z wiersza {post.row_index + 2}: {e}")
+            log_with_context('error', 'Post publication failed', 
+                           post_row=post.row_index + 2, error=str(e))
             self.notification_service.send_error_notification(post, str(e))
+            security_manager.report_suspicious_activity('post_publication_error', 
+                                                      {'row': post.row_index, 'error': str(e)})
+            # Rejestruj nieudaną publikację
+            post_info = {
+                'content_preview': post.tresc_postu[:50] + '...' if len(post.tresc_postu) > 50 else post.tresc_postu,
+                'image_path': post.sciezka_zdjecia,
+                'tags': post.tagi[:50] + '...' if len(post.tagi) > 50 else post.tagi
+            }
+            metrics_collector.record_post_failed(post_info, str(e))
             return False
     
     def publish_today_posts(self) -> None:
@@ -217,7 +319,7 @@ class PublisherService:
                 "Błąd publikacji", str(e)
             )
     
-    def _publish_single_post(self, post) -> bool:
+    def _publish_single_post(self, post: Post) -> bool:
         """Publikuje pojedynczy post"""
         try:
             # Zaloguj się do Instagrama jeśli nie jesteś zalogowany

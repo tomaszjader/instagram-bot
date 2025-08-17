@@ -25,6 +25,8 @@ ENV/
 images/
 config.json
 credentials.json
+instagram_session.json
+*.session
 
 # Distribution / packaging
 .Python
