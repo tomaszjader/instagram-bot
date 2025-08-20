@@ -1,7 +1,11 @@
 import unittest
-from datetime import datetime
 from unittest.mock import patch, Mock
-from google_sheets import parsuj_date_value, gdrive_to_direct
+from datetime import datetime, date
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from src.integrations.google_sheets import parsuj_date_value, gdrive_to_direct, wczytaj_arkusz
 
 
 class TestDateParsing(unittest.TestCase):

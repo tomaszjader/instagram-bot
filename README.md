@@ -221,77 +221,109 @@ curl http://localhost:8080/metrics/prometheus
 
 ### Uruchomienie harmonogramu
 ```bash
-python main.py
+python src/core/main.py
 ```
 
 ### Test publikacji
 ```bash
-python main.py test
+python src/core/main.py test
 ```
 
 ### Test parsowania dat
 ```bash
-python main.py dates
+python src/core/main.py dates
 ```
 
 ### Test ładowania danych
 ```bash
-python main.py data
+python src/core/main.py data
 ```
 
 ### Jednorazowa publikacja
 ```bash
-python main.py once
+python src/core/main.py once
 ```
 
 ### Status schedulera
 ```bash
-python main.py status
+python src/core/main.py status
 ```
 
 ### Pomoc
 ```bash
-python main.py help
+python src/core/main.py help
 ```
 
 ## 📁 Struktura projektu
 
 ```
-├── .gitignore           # Pliki ignorowane przez Git
-├── README.md            # Dokumentacja projektu
-├── main.py              # Główny plik uruchomieniowy
-├── config.py            # Konfiguracja i zmienne środowiskowe
-├── scheduler.py         # Scheduler oparty na klasach
-├── models.py            # Modele danych (Post, ColumnMapper)
-├── services.py          # Logika biznesowa (serwisy)
-├── instagram.py         # Integracja z Instagram API
-├── google_sheets.py     # Integracja z Google Sheets API
-├── telegram_bot.py      # Powiadomienia Telegram
-├── image_utils.py       # Przetwarzanie obrazów
-└── requirements.txt     # Zależności projektu
+├── .gitignore              # Pliki ignorowane przez Git
+├── README.md               # Dokumentacja projektu
+├── requirements.txt        # Zależności projektu
+├── requirements-test.txt   # Zależności testowe
+├── src/                    # Kod źródłowy aplikacji
+│   ├── __init__.py
+│   ├── config/             # Konfiguracja
+│   │   ├── __init__.py
+│   │   └── config.py       # Zmienne środowiskowe i konfiguracja
+│   ├── core/               # Główne komponenty
+│   │   ├── __init__.py
+│   │   └── main.py         # Punkt wejścia aplikacji
+│   ├── models/             # Modele danych
+│   │   ├── __init__.py
+│   │   └── models.py       # Post, ColumnMapper
+│   ├── services/           # Logika biznesowa
+│   │   ├── __init__.py
+│   │   ├── services.py     # DataService, ImageService, etc.
+│   │   ├── scheduler.py    # Scheduler, TestScheduler
+│   │   └── monitoring.py   # Health check, metryki
+│   ├── integrations/       # Integracje zewnętrzne
+│   │   ├── __init__.py
+│   │   ├── instagram.py    # Instagram API
+│   │   ├── google_sheets.py # Google Sheets API
+│   │   └── telegram_bot.py # Powiadomienia Telegram
+│   └── utils/              # Narzędzia pomocnicze
+│       ├── __init__.py
+│       ├── utils.py        # Retry, rate limiting
+│       ├── security.py     # Walidacja, bezpieczeństwo
+│       └── image_utils.py  # Przetwarzanie obrazów
+└── tests/                  # Testy jednostkowe
+    ├── test_models.py
+    ├── test_services.py
+    ├── test_google_sheets.py
+    ├── test_security.py
+    ├── test_monitoring.py
+    ├── test_logging.py
+    └── test_graceful_shutdown.py
 ```
 
 ## 🏗️ Architektura
 
-Projekt został zrefaktoryzowany z monolitycznej struktury na architekturę opartą na klasach:
+Projekt został zrefaktoryzowany z monolitycznej struktury na modularną architekturę z separacją odpowiedzialności:
 
-- **models.py** - Modele danych (`Post`, `ColumnMapper`)
-- **services.py** - Serwisy biznesowe (`DataService`, `ImageService`, `NotificationService`, `PublisherService`)
-- **scheduler.py** - Scheduler (`Scheduler`, `TestScheduler`)
-- **main.py** - Punkt wejścia z rozszerzonymi opcjami
-- **config.py** - Zarządzanie konfiguracją środowiska
-- **instagram.py** - Obsługa publikacji na Instagram
-- **google_sheets.py** - Integracja z Google Sheets
-- **telegram_bot.py** - Powiadomienia przez Telegram
-- **image_utils.py** - Przetwarzanie i optymalizacja obrazów
+### 📦 Moduły
+
+- **`src/config/`** - Zarządzanie konfiguracją środowiska i logowania
+- **`src/models/`** - Modele danych (`Post`, `ColumnMapper`)
+- **`src/services/`** - Logika biznesowa (`DataService`, `ImageService`, `NotificationService`, `PublisherService`, `Scheduler`, `Monitoring`)
+- **`src/integrations/`** - Integracje zewnętrzne (Instagram, Google Sheets, Telegram)
+- **`src/utils/`** - Narzędzia pomocnicze (retry, rate limiting, bezpieczeństwo, przetwarzanie obrazów)
+- **`src/core/`** - Główny punkt wejścia aplikacji
+- **`tests/`** - Kompleksowe testy jednostkowe
+
+### 🎯 Zasady architektury
+- **Single Responsibility Principle** - każdy moduł ma jedną odpowiedzialność
+- **Dependency Injection** - luźne powiązania między komponentami
+- **Separation of Concerns** - wyraźne rozdzielenie warstw
+- **Testability** - każdy komponent jest testowalny niezależnie
 
 ### Korzyści refaktoryzacji:
-- ✅ Single Responsibility Principle
-- ✅ Łatwiejsze testowanie jednostkowe
-- ✅ Lepsza skalowalność
-- ✅ Prostsze debugowanie
-- ✅ Czytelniejszy kod
-- ✅ Usunięte duplikacje kodu
+- ✅ Modularna struktura z wyraźną separacją odpowiedzialności
+- ✅ Łatwiejsze testowanie i debugowanie
+- ✅ Lepsza skalowalność i możliwość rozszerzania
+- ✅ Czytelniejszy i łatwiejszy w utrzymaniu kod
+- ✅ Zgodność z najlepszymi praktykami Python
+- ✅ Przygotowanie do dalszego rozwoju aplikacji
 
 ## ⚙️ Konfiguracja API
 

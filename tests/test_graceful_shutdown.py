@@ -6,9 +6,13 @@ Test graceful shutdown functionality dla schedulera
 
 import time
 import threading
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from unittest.mock import Mock, patch
-from scheduler import Scheduler
-from config import log_with_context
+from src.services.scheduler import Scheduler
+from src.config import log_with_context
 
 def test_graceful_shutdown():
     """Test podstawowej funkcjonalności graceful shutdown"""

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 from flask import Flask, jsonify, request
-from config import log_with_context
+from src.config import log_with_context
 
 
 @dataclass

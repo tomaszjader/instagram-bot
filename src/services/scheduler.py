@@ -8,8 +8,8 @@ import atexit
 from datetime import datetime, time as dt_time
 from typing import Optional, Dict, Any, Callable
 
-from config import logger, log_with_context
-from services import PublisherService
+from src.config import logger, log_with_context
+from src.services.services import PublisherService
 
 
 class Scheduler:

@@ -1,5 +1,5 @@
 import requests
-from config import logger
+from src.config import logger
 
 
 def wyslij_telegram(token, chat_id, wiadomosc):

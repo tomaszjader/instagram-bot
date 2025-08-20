@@ -9,8 +9,12 @@ import unittest
 import time
 import threading
 import requests
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from datetime import datetime, timedelta
-from monitoring import MetricsCollector, HealthCheckServer, SystemMetrics, ApplicationMetrics, HealthStatus
+from src.services.monitoring import MetricsCollector, HealthCheckServer, SystemMetrics, ApplicationMetrics, HealthStatus
 
 
 class TestMetricsCollector(unittest.TestCase):

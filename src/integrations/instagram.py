@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Optional, Union, Dict, Any
 from instagrapi import Client
 from instagrapi.exceptions import LoginRequired, PleaseWaitFewMinutes, RateLimitError
-from config import logger
-from google_sheets import gdrive_to_direct
-from image_utils import pobierz_i_zapisz_zdjecie, przetworz_lokalny_obraz
-from utils import retry_with_backoff, instagram_rate_limiter
+from src.config import logger, INSTA_USERNAME, INSTA_PASSWORD
+from src.integrations.google_sheets import gdrive_to_direct
+from src.utils.image_utils import pobierz_i_zapisz_zdjecie, przetworz_lokalny_obraz
+from src.utils import retry_with_backoff, RateLimiter
+from src.utils.security import security_manager
 
 
 class InstagramManager:

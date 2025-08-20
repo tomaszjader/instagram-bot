@@ -8,7 +8,11 @@ Testuje walidację danych wejściowych i rate limiting
 import unittest
 from unittest.mock import patch, MagicMock
 import time
-from security import InputValidator, AdvancedRateLimiter, SecurityManager, ValidationResult
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from src.utils.security import InputValidator, AdvancedRateLimiter, SecurityManager, ValidationResult
 
 
 class TestInputValidator(unittest.TestCase):

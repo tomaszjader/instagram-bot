@@ -2,9 +2,12 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import date
 import os
+import sys
 import tempfile
-from models import Post
-from services import DataService, ImageService, NotificationService, PublisherService
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from src.models import Post
+from src.services import DataService, ImageService, NotificationService, PublisherService
 
 
 class TestDataService(unittest.TestCase):

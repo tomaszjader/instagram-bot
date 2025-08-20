@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from datetime import datetime, date
 from typing import Optional, Dict, Any, List
-from config import logger
-from google_sheets import parsuj_date_value
+from src.config import logger
+from src.integrations.google_sheets import parsuj_date_value
 
 
 @dataclass

@@ -12,7 +12,7 @@ from typing import Optional, Dict, Any, List, Union
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from urllib.parse import urlparse
-from config import logger, log_with_context
+from src.config import logger, log_with_context
 
 
 @dataclass

@@ -5,17 +5,17 @@ import tempfile
 from typing import List, Optional
 from datetime import datetime
 
-from config import (
+from src.config import (
     GOOGLE_SHEET_ID, INSTA_USERNAME, INSTA_PASSWORD, 
     TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, logger, is_telegram_enabled, log_with_context
 )
-from models import Post, ColumnMapper
-from google_sheets import wczytaj_arkusz, znajdz_zdjecie_dla_wiersza
-from instagram import zaloguj_instagrama, opublikuj_post
-from telegram_bot import wyslij_telegram
-from image_utils import pobierz_domyslne_zdjecie
-from security import security_manager, ValidationResult
-from monitoring import metrics_collector
+from src.models import Post, ColumnMapper
+from src.integrations.google_sheets import wczytaj_arkusz, znajdz_zdjecie_dla_wiersza
+from src.integrations.instagram import zaloguj_instagrama, opublikuj_post
+from src.integrations.telegram_bot import wyslij_telegram
+from src.utils.image_utils import pobierz_domyslne_zdjecie
+from src.utils.security import security_manager, ValidationResult
+from src.services.monitoring import metrics_collector
 
 
 class DataService:

@@ -1,6 +1,10 @@
 import unittest
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from datetime import datetime, date
-from models import Post, ColumnMapper
+from src.models import Post, ColumnMapper
 
 
 class TestPost(unittest.TestCase):

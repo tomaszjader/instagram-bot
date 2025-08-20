@@ -3,7 +3,9 @@
 
 import os
 import sys
-from config import logger, log_with_context, get_logging_config
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from src.config import logger, log_with_context, get_logging_config
 
 
 def test_text_logging():

@@ -17,9 +17,12 @@ Użycie:
 """
 
 import sys
-from config import logger
-from scheduler import create_scheduler, create_test_scheduler
-from monitoring import metrics_collector, HealthCheckServer
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from src.config import logger
+from src.services import create_scheduler, create_test_scheduler
+from src.services import metrics_collector, HealthCheckServer
 
 
 def show_usage():

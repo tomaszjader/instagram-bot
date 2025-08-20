@@ -3,7 +3,7 @@ import requests
 import tempfile
 import uuid
 from PIL import Image
-from config import logger
+from src.config import logger
 
 
 def pobierz_domyslne_zdjecie():
