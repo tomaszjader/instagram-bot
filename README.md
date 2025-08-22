@@ -251,7 +251,7 @@ python src/core/main.py status
 
 ### Pomoc
 ```bash
-python src/core/main.py help
+python src/core/main.py --help
 ```
 
 ## 📁 Struktura projektu
