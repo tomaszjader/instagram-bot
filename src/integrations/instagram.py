@@ -4,7 +4,11 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Union, Dict, Any
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired, PleaseWaitFewMinutes, RateLimitError
+from instagrapi.exceptions import (
+    LoginRequired, PleaseWaitFewMinutes, RateLimitError,
+    ClientError, ClientConnectionError, ClientThrottledError,
+    MediaNotFound, UserNotFound, ChallengeRequired
+)
 from src.config import logger, INSTA_USERNAME, INSTA_PASSWORD
 from src.integrations.google_sheets import gdrive_to_direct
 from src.utils.image_utils import pobierz_i_zapisz_zdjecie, przetworz_lokalny_obraz
@@ -62,10 +66,10 @@ class InstagramManager:
         max_retries=3,
         base_delay=5.0,
         max_delay=60.0,
-        exceptions=(LoginRequired, PleaseWaitFewMinutes, ConnectionError)
+        exceptions=(LoginRequired, PleaseWaitFewMinutes, ConnectionError, ClientConnectionError)
     )
     def login(self) -> Optional[Client]:
-        """Loguje się do Instagrama z session persistence"""
+        """Loguje się do Instagrama z session persistence i graceful degradation"""
         instagram_rate_limiter.wait_if_needed()
         
         # Spróbuj załadować istniejącą sesję
@@ -83,12 +87,24 @@ class InstagramManager:
             
             return self.client
             
-        except (LoginRequired, PleaseWaitFewMinutes, RateLimitError) as e:
+        except ChallengeRequired as e:
+            logger.error(f"Instagram wymaga weryfikacji dwuetapowej lub challenge: {e}")
+            # Graceful degradation - nie przerywaj całej aplikacji
+            return None
+        except (LoginRequired, PleaseWaitFewMinutes, RateLimitError, ClientThrottledError) as e:
             logger.warning(f"Instagram wymaga oczekiwania lub ma problemy z logowaniem: {e}")
             raise
-        except Exception as e:
-            logger.error(f"Błąd podczas logowania do Instagrama: {e}")
+        except (ClientConnectionError, ConnectionError) as e:
+            logger.error(f"Problemy z połączeniem do Instagrama: {e}")
             raise
+        except ClientError as e:
+            logger.error(f"Błąd klienta Instagram: {e}")
+            # Graceful degradation dla błędów klienta
+            return None
+        except Exception as e:
+            logger.error(f"Nieoczekiwany błąd podczas logowania do Instagrama: {e}")
+            # Graceful degradation dla nieznanych błędów
+            return None
     
     def get_client(self) -> Optional[Client]:
         """Zwraca aktualnego klienta lub None"""
@@ -141,10 +157,14 @@ def zaloguj_instagrama(username: str, password: str) -> Optional[Client]:
     max_retries=2,
     base_delay=10.0,
     max_delay=120.0,
-    exceptions=(PleaseWaitFewMinutes, RateLimitError, ConnectionError)
+    exceptions=(PleaseWaitFewMinutes, RateLimitError, ConnectionError, ClientConnectionError)
 )
 def opublikuj_post(cl: Client, sciezka_zdjecia: str, opis: str) -> Any:
-    """Publikuje post na Instagramie z retry mechanism"""
+    """Publikuje post na Instagramie z retry mechanism i graceful degradation"""
+    if not cl:
+        logger.error("Brak klienta Instagram - nie można opublikować posta")
+        return None
+        
     try:
         instagram_rate_limiter.wait_if_needed()
         # Sprawdź czy to URL czy lokalna ścieżka
@@ -194,7 +214,19 @@ def opublikuj_post(cl: Client, sciezka_zdjecia: str, opis: str) -> Any:
                         logger.info(f"Usunięto tymczasowy plik: {temp_path}")
                     except Exception as e:
                         logger.warning(f"Nie można usunąć tymczasowego pliku: {e}")
-            
+
+    except FileNotFoundError as e:
+        logger.error(f"Nie znaleziono pliku obrazu: {e}")
+        return None
+    except (PleaseWaitFewMinutes, RateLimitError, ClientThrottledError) as e:
+        logger.warning(f"Instagram wymaga oczekiwania: {e}")
+        raise  # Te błędy powinny być retry'owane
+    except (ClientConnectionError, ConnectionError) as e:
+        logger.error(f"Problemy z połączeniem podczas publikacji: {e}")
+        raise  # Te błędy powinny być retry'owane
+    except ClientError as e:
+        logger.error(f"Błąd klienta Instagram podczas publikacji: {e}")
+        return None  # Graceful degradation
     except Exception as e:
-        logger.error(f"Błąd podczas publikowania posta: {e}")
-        raise
+        logger.error(f"Nieoczekiwany błąd podczas publikacji posta: {e}")
+        return None  # Graceful degradation dla nieznanych błędów

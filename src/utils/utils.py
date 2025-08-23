@@ -4,7 +4,7 @@ import time
 import random
 from typing import Callable, Any, Optional, Type, Union
 from functools import wraps
-from config import logger
+from src.config import logger
 
 
 def retry_with_backoff(

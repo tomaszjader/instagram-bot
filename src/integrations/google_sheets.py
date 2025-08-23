@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Union, Any, List, Dict
 from src.config import GOOGLE_API_KEY, GOOGLE_SHEET_ID, logger
 from src.utils import retry_with_backoff, google_sheets_rate_limiter
+from src.utils.security import InputValidator, ValidationResult
 
 
 def gdrive_to_direct(url: str) -> str:
@@ -13,6 +14,47 @@ def gdrive_to_direct(url: str) -> str:
         file_id = match.group(1)
         return f"https://drive.google.com/uc?export=download&id={file_id}"
     return url
+
+
+def validate_and_sanitize_sheet_data(raw_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Waliduje i sanityzuje dane z arkusza Google Sheets"""
+    validated_data = []
+    invalid_rows_count = 0
+    
+    for row_idx, row in enumerate(raw_data, start=2):  # Start from 2 because row 1 is headers
+        try:
+            # Sanityzuj wszystkie wartości tekstowe
+            sanitized_row = {}
+            for key, value in row.items():
+                if isinstance(value, str):
+                    # Usuń potencjalnie niebezpieczne znaki
+                    sanitized_value = re.sub(r'[<>"\';\\]', '', value.strip())
+                    # Ogranicz długość
+                    if len(sanitized_value) > 5000:
+                        sanitized_value = sanitized_value[:5000]
+                        logger.warning(f"Skrócono zbyt długą wartość w wierszu {row_idx}, kolumna '{key}'")
+                    sanitized_row[key] = sanitized_value
+                else:
+                    sanitized_row[key] = value
+            
+            # Sprawdź czy wiersz zawiera wymagane dane
+            has_content = any(str(value).strip() for value in sanitized_row.values() if value)
+            
+            if has_content:
+                validated_data.append(sanitized_row)
+            else:
+                logger.debug(f"Pominięto pusty wiersz {row_idx}")
+                
+        except Exception as e:
+            invalid_rows_count += 1
+            logger.warning(f"Błąd podczas walidacji wiersza {row_idx}: {e}")
+            continue
+    
+    if invalid_rows_count > 0:
+        logger.warning(f"Pominięto {invalid_rows_count} nieprawidłowych wierszy podczas walidacji")
+    
+    logger.info(f"Zwalidowano {len(validated_data)} wierszy z {len(raw_data)} oryginalnych")
+    return validated_data
 
 
 def parsuj_date_value(date_value: Union[str, int, float, None]) -> Optional[datetime]:
@@ -167,6 +209,7 @@ def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
         logger.info(f"Nagłówki arkusza: {headers}")
 
         # Przetwórz pozostałe wiersze
+        raw_data = []
         for row_idx, row in enumerate(values[1:], start=1):
             row_dict = {}
             for i, header in enumerate(headers):
@@ -174,11 +217,16 @@ def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
                     row_dict[header] = row[i]
                 else:
                     row_dict[header] = ''
-            dane.append(row_dict)
-            logger.info(f"Wiersz {row_idx + 1}: {row_dict}")
+            raw_data.append(row_dict)
+            logger.debug(f"Wiersz {row_idx + 1}: {row_dict}")
 
-        logger.info(f"Wczytano {len(dane)} wierszy z arkusza używając API Key")
-        return dane
+        logger.info(f"Wczytano {len(raw_data)} surowych wierszy z arkusza")
+        
+        # Waliduj i sanityzuj dane
+        validated_data = validate_and_sanitize_sheet_data(raw_data)
+        
+        logger.info(f"Zwrócono {len(validated_data)} zwalidowanych wierszy z arkusza")
+        return validated_data
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Błąd HTTP podczas wczytywania arkusza: {e}")

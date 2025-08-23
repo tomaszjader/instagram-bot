@@ -1,5 +1,6 @@
 import os
 import logging
+import logging.handlers
 import json
 from datetime import datetime
 from typing import Dict, Optional, Any
@@ -32,7 +33,7 @@ class JSONFormatter(logging.Formatter):
 
 
 def setup_logging() -> logging.Logger:
-    """Konfiguruje system logowania z obsługą różnych formatów i poziomów"""
+    """Konfiguruje system logowania z obsługą różnych formatów, poziomów i rotacji"""
     # Pobierz konfigurację z zmiennych środowiskowych
     log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
     log_format = os.getenv('LOG_FORMAT', 'TEXT').upper()  # TEXT lub JSON
@@ -48,14 +49,14 @@ def setup_logging() -> logging.Logger:
     
     numeric_level = level_mapping.get(log_level, logging.INFO)
     
+    # Utwórz katalog logów jeśli nie istnieje
+    if LOG_ROTATION_ENABLED:
+        os.makedirs(LOG_DIR, exist_ok=True)
+    
     # Usuń istniejące handlery
     root_logger = logging.getLogger()
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
-    # Utwórz nowy handler
-    handler = logging.StreamHandler()
-    handler.setLevel(numeric_level)
     
     # Wybierz formatter
     if log_format == 'JSON':
@@ -65,11 +66,44 @@ def setup_logging() -> logging.Logger:
             '%(asctime)s - %(levelname)s - %(name)s:%(funcName)s:%(lineno)d - %(message)s'
         )
     
-    handler.setFormatter(formatter)
+    # Utwórz handlery
+    handlers = []
+    
+    # Console handler (zawsze obecny)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(numeric_level)
+    console_handler.setFormatter(formatter)
+    handlers.append(console_handler)
+    
+    # File handler z rotacją (jeśli włączona)
+    if LOG_ROTATION_ENABLED:
+        log_file = os.path.join(LOG_DIR, 'instagram_publisher.log')
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=LOG_MAX_SIZE,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(numeric_level)
+        file_handler.setFormatter(formatter)
+        handlers.append(file_handler)
+        
+        # Dodatkowy handler dla błędów
+        error_log_file = os.path.join(LOG_DIR, 'errors.log')
+        error_handler = logging.handlers.RotatingFileHandler(
+            error_log_file,
+            maxBytes=LOG_MAX_SIZE,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding='utf-8'
+        )
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(formatter)
+        handlers.append(error_handler)
     
     # Konfiguruj root logger
     root_logger.setLevel(numeric_level)
-    root_logger.addHandler(handler)
+    for handler in handlers:
+        root_logger.addHandler(handler)
     
     # Zwróć logger dla tego modułu
     return logging.getLogger(__name__)
@@ -88,6 +122,18 @@ GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+# Health Check Configuration
+HEALTH_CHECK_PORT = int(os.getenv("HEALTH_CHECK_PORT", "8080"))
+HEALTH_CHECK_INTERVAL = int(os.getenv("HEALTH_CHECK_INTERVAL", "30"))  # seconds
+HEALTH_CHECK_TIMEOUT = int(os.getenv("HEALTH_CHECK_TIMEOUT", "10"))  # seconds
+HEALTH_CHECK_ENABLED = os.getenv("HEALTH_CHECK_ENABLED", "true").lower() == "true"
+
+# Logging Configuration
+LOG_DIR = os.getenv("LOG_DIR", "logs")
+LOG_MAX_SIZE = int(os.getenv("LOG_MAX_SIZE", "10485760"))  # 10MB default
+LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "5"))
+LOG_ROTATION_ENABLED = os.getenv("LOG_ROTATION_ENABLED", "true").lower() == "true"
 
 # Sprawdzenie wymaganych i opcjonalnych zmiennych środowiskowych
 required_vars = {
@@ -153,8 +199,17 @@ def get_logging_config() -> Dict[str, str]:
     """Zwraca aktualną konfigurację logowania"""
     return {
         'level': os.getenv('LOG_LEVEL', 'INFO'),
-        'format': os.getenv('LOG_FORMAT', 'TEXT'),
-        'current_level': logging.getLevelName(logger.level)
+        'format': os.getenv('LOG_FORMAT', 'TEXT')
+    }
+
+
+def get_health_check_config() -> Dict[str, Any]:
+    """Zwraca konfigurację health check"""
+    return {
+        'enabled': HEALTH_CHECK_ENABLED,
+        'port': HEALTH_CHECK_PORT,
+        'interval': HEALTH_CHECK_INTERVAL,
+        'timeout': HEALTH_CHECK_TIMEOUT
     }
 
 # Automatyczna walidacja przy imporcie
