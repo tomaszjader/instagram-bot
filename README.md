@@ -1,134 +1,129 @@
-# Instagram Auto Publisher 📸 
+# Instagram Auto Publisher 📸
 
-Automatyczny system publikacji postów na Instagramie na podstawie harmonogramu z Google Sheets.
+Automatic Instagram post publishing system based on Google Sheets schedule.
 
-## 🚀 Funkcje
+## 🚀 Features
 
-- ⏰ Automatyczna publikacja postów według harmonogramu
-- 📊 Integracja z Google Sheets jako źródło danych
-- 🖼️ Automatyczne przetwarzanie obrazów (proporcje Instagram)
-- 📱 Powiadomienia Telegram o statusie publikacji
-- 🔄 Obsługa różnych formatów dat
-- 🌐 Pobieranie obrazów z URL (w tym Google Drive)
+- ⏰ Automatic post publishing according to schedule
+- 📊 Google Sheets integration as data source
+- 🖼️ Automatic image processing (Instagram proportions)
+- 📱 Telegram notifications about publishing status
+- 🔄 Support for various date formats
+- 🌐 Image downloading from URLs (including Google Drive)
 
-## 📋 Wymagania
+## 📋 Requirements
 
 - Python 3.8+
-- Konto Instagram
+- Instagram account
 - Google Sheets API Key
-- Bot Telegram (opcjonalnie)
+- Telegram Bot (optional)
 
-## 🛠️ Instalacja
+## 🛠️ Installation
 
-1. **Sklonuj repozytorium:**
+1. **Clone the repository:**
    ```bash
    git clone <repository-url>
    cd pythonProject57
    ```
 
-2. **Zainstaluj zależności:**
+2. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Utwórz plik `.env` z konfiguracją:**
+3. **Create .env file with configuration:**
    ```env
-   INSTA_USERNAME=twoja_nazwa_uzytkownika
-   INSTA_PASSWORD=twoje_haslo
-   GOOGLE_SHEET_ID=id_arkusza_google
-   GOOGLE_API_KEY=twoj_klucz_api_google
-   TELEGRAM_BOT_TOKEN=token_bota_telegram
-   TELEGRAM_CHAT_ID=id_czatu_telegram
+   INSTA_USERNAME=your_username
+   INSTA_PASSWORD=your_password
+   GOOGLE_SHEET_ID=google_sheet_id
+   GOOGLE_API_KEY=your_google_api_key
+   TELEGRAM_BOT_TOKEN=telegram_bot_token
+   TELEGRAM_CHAT_ID=telegram_chat_id
    
-   # Opcjonalne - konfiguracja logowania
+   # Optional - logging configuration
    LOG_LEVEL=INFO
    LOG_FORMAT=TEXT
    ```
 
-## 📊 Konfiguracja Google Sheets
+## 📊 Google Sheets Configuration
 
-Arkusz powinien zawierać kolumny:
-- `data_publikacji` - data publikacji (DD.MM.YYYY lub inne obsługiwane formaty)
-- `tresc_postu` - treść posta
-- `tagi` - hashtagi (opcjonalnie)
-- `sciezka_zdjecia` - URL lub ścieżka do zdjęcia
-- `czy_opublikowano` - status publikacji (TRUE/FALSE)
+The sheet should contain columns:
+- **data_publikacji** - publication date (DD.MM.YYYY or other supported formats)
+- **tresc_postu** - post content
+- **tagi** - hashtags (optional)
+- **sciezka_zdjecia** - URL or path to image
+- **czy_opublikowano** - publication status (TRUE/FALSE)
 
-## 📝 Konfiguracja logowania
+## 📝 Logging Configuration
 
-System obsługuje konfigurowalny poziom logowania i structured logging w formacie JSON:
+The system supports configurable logging level and structured logging in JSON format:
 
-### Poziomy logowania
-- `DEBUG` - szczegółowe informacje diagnostyczne
-- `INFO` - ogólne informacje o działaniu (domyślny)
-- `WARNING` - ostrzeżenia
-- `ERROR` - błędy
-- `CRITICAL` - krytyczne błędy
+### Logging Levels
+- **DEBUG** - detailed diagnostic information
+- **INFO** - general operational information (default)
+- **WARNING** - warnings
+- **ERROR** - errors
+- **CRITICAL** - critical errors
 
-### Formaty logowania
-- `TEXT` - standardowy format tekstowy (domyślny)
-- `JSON` - structured logging w formacie JSON
+### Logging Formats
+- **TEXT** - standard text format (default)
+- **JSON** - structured logging in JSON format
 
-### Przykłady konfiguracji
+### Configuration Examples
 ```bash
-# Standardowe logowanie
+# Standard logging
 LOG_LEVEL=INFO
 LOG_FORMAT=TEXT
 
-# Structured logging dla systemów monitorowania
+# Structured logging for monitoring systems
 LOG_LEVEL=DEBUG
 LOG_FORMAT=JSON
 ```
 
-### Testowanie logowania
+### Testing Logging
 ```bash
 python test_logging.py
 ```
 
-## 🔒 Bezpieczeństwo
+## 🔒 Security
 
-Aplikacja zawiera zaawansowane mechanizmy bezpieczeństwa chroniące przed nadużyciami i błędami.
+The application includes advanced security mechanisms protecting against abuse and errors.
 
-### Walidacja danych wejściowych
-
-- **Nazwy użytkowników Instagram**: Sprawdzanie długości (1-30 znaków) i dozwolonych znaków
-- **Treść postów**: Limit 2200 znaków, wykrywanie zabronionych słów
-- **Hashtagi**: Maksymalnie 30 hashtagów, walidacja formatu
-- **URL obrazów**: Sprawdzanie protokołu HTTPS i rozszerzeń plików
+### Input Data Validation
+- **Instagram usernames**: Length check (1-30 characters) and allowed characters
+- **Post content**: 2200 character limit, forbidden words detection
+- **Hashtags**: Maximum 30 hashtags, format validation
+- **Image URLs**: HTTPS protocol and file extensions check
 
 ### Rate Limiting
+- **Instagram API**: 20 calls/min, 500/hour, burst limit 5
+- **Google Sheets API**: 60 calls/min, 3000/hour, burst limit 10
+- **Automatic cooldown**: After exceeding limits (5-10 minutes)
+- **Intelligent waiting**: Automatic delays when approaching limits
 
-- **Instagram API**: 20 wywołań/min, 500/godz, burst limit 5
-- **Google Sheets API**: 60 wywołań/min, 3000/godz, burst limit 10
-- **Automatyczny cooldown**: Po przekroczeniu limitów (5-10 minut)
-- **Inteligentne oczekiwanie**: Automatyczne opóźnienia przy zbliżaniu się do limitów
+### Security Monitoring
+- **Suspicious activity detection**: Automatic logging of unusual behavior
+- **API call statistics**: Usage and blocking tracking
+- **Structured logging**: All security events in JSON format
 
-### Monitoring bezpieczeństwa
-
-- **Wykrywanie podejrzanych aktywności**: Automatyczne logowanie nietypowych zachowań
-- **Statystyki wywołań API**: Śledzenie użycia i blokad
-- **Strukturalne logowanie**: Wszystkie zdarzenia bezpieczeństwa w formacie JSON
-
-### Testowanie bezpieczeństwa
-
-Aby przetestować funkcje bezpieczeństwa:
-
+### Security Testing
+To test security features:
 ```bash
 python test_security.py
 ```
 
-## 📊 Monitoring i Health Check
+## 📊 Monitoring and Health Check
 
-Aplikacja zawiera zaawansowany system monitorowania:
+The application includes an advanced monitoring system:
 
 ### Health Check Server
-- **Port**: 8080 (konfigurowalny przez `HEALTH_CHECK_PORT`)
-- **Automatyczne uruchamianie**: serwer startuje w tle razem z aplikacją
-- **Endpointy HTTP**: dostępne dla zewnętrznych systemów monitorowania
+- **Port**: 8080 (configurable via HEALTH_CHECK_PORT)
+- **Automatic startup**: server starts in background with application
+- **HTTP Endpoints**: available for external monitoring systems
 
-### Dostępne Endpointy
+### Available Endpoints
 
-#### `/health` - Status Zdrowia
+#### /health - Health Status
 ```json
 {
   "status": "healthy|degraded|unhealthy",
@@ -138,7 +133,7 @@ Aplikacja zawiera zaawansowany system monitorowania:
 }
 ```
 
-#### `/metrics` - Metryki Aplikacji
+#### /metrics - Application Metrics
 ```json
 {
   "system": {
@@ -165,8 +160,8 @@ Aplikacja zawiera zaawansowany system monitorowania:
 }
 ```
 
-#### `/metrics/prometheus` - Metryki Prometheus
-Format kompatybilny z Prometheus dla integracji z systemami monitorowania:
+#### /metrics/prometheus - Prometheus Metrics
+Format compatible with Prometheus for monitoring system integration:
 ```
 # HELP instagram_scheduler_posts_published_total Total number of published posts
 # TYPE instagram_scheduler_posts_published_total counter
@@ -177,117 +172,117 @@ instagram_scheduler_posts_published_total 150
 instagram_scheduler_cpu_percent 15.2
 ```
 
-#### `/status` - Pełny Status
-Kombinuje informacje z `/health` i `/metrics` w jednym endpoincie.
+#### /status - Full Status
+Combines information from /health and /metrics in one endpoint.
 
-### Automatyczne Zbieranie Metryk
-- **Publikacje postów**: automatyczne rejestrowanie udanych i nieudanych publikacji
-- **Wywołania API**: śledzenie wszystkich wywołań Instagram i Google Sheets API
-- **Status schedulera**: monitorowanie stanu aplikacji (running, stopped, error)
-- **Metryki systemowe**: CPU, pamięć, dysk w czasie rzeczywistym
+### Automatic Metrics Collection
+- **Post publishing**: automatic registration of successful and failed publications
+- **API calls**: tracking all Instagram and Google Sheets API calls
+- **Scheduler status**: application state monitoring (running, stopped, error)
+- **System metrics**: CPU, memory, disk in real-time
 
-### Kryteria Zdrowia
-Aplikacja automatycznie określa swój status na podstawie:
+### Health Criteria
+The application automatically determines its status based on:
 - **CPU > 90%**: degraded/unhealthy
-- **Pamięć > 90%**: degraded/unhealthy
-- **Dysk > 95%**: degraded/unhealthy
-- **Scheduler nie działa**: degraded/unhealthy
-- **Wskaźnik błędów > 50%**: degraded/unhealthy
+- **Memory > 90%**: degraded/unhealthy
+- **Disk > 95%**: degraded/unhealthy
+- **Scheduler not running**: degraded/unhealthy
+- **Error rate > 50%**: degraded/unhealthy
 
-### Integracja z Systemami Monitorowania
-- **Prometheus**: endpoint `/metrics/prometheus`
-- **Grafana**: wizualizacja metryk
-- **Alerting**: na podstawie statusu health check
-- **Load balancers**: health check dla wysokiej dostępności
+### Integration with Monitoring Systems
+- **Prometheus**: /metrics/prometheus endpoint
+- **Grafana**: metrics visualization
+- **Alerting**: based on health check status
+- **Load balancers**: health check for high availability
 
-### Testowanie Monitorowania
+### Monitoring Testing
 ```bash
 python test_monitoring.py
 ```
 
-### Przykłady Użycia
+### Usage Examples
 ```bash
-# Sprawdź status zdrowia
+# Check health status
 curl http://localhost:8080/health
 
-# Pobierz metryki
+# Get metrics
 curl http://localhost:8080/metrics
 
-# Metryki dla Prometheus
+# Metrics for Prometheus
 curl http://localhost:8080/metrics/prometheus
 ```
 
-## 🎯 Użycie
+## 🎯 Usage
 
-### Uruchomienie harmonogramu
+### Running the scheduler
 ```bash
 python src/core/main.py
 ```
 
-### Test publikacji
+### Test publishing
 ```bash
 python src/core/main.py test
 ```
 
-### Test parsowania dat
+### Test date parsing
 ```bash
 python src/core/main.py dates
 ```
 
-### Test ładowania danych
+### Test data loading
 ```bash
 python src/core/main.py data
 ```
 
-### Jednorazowa publikacja
+### One-time publishing
 ```bash
 python src/core/main.py once
 ```
 
-### Status schedulera
+### Scheduler status
 ```bash
 python src/core/main.py status
 ```
 
-### Pomoc
+### Help
 ```bash
 python src/core/main.py --help
 ```
 
-## 📁 Struktura projektu
+## 📁 Project Structure
 
 ```
-├── .gitignore              # Pliki ignorowane przez Git
-├── README.md               # Dokumentacja projektu
-├── requirements.txt        # Zależności projektu
-├── requirements-test.txt   # Zależności testowe
-├── src/                    # Kod źródłowy aplikacji
+├── .gitignore              # Files ignored by Git
+├── README.md               # Project documentation
+├── requirements.txt        # Project dependencies
+├── requirements-test.txt   # Test dependencies
+├── src/                    # Application source code
 │   ├── __init__.py
-│   ├── config/             # Konfiguracja
+│   ├── config/             # Configuration
 │   │   ├── __init__.py
-│   │   └── config.py       # Zmienne środowiskowe i konfiguracja
-│   ├── core/               # Główne komponenty
+│   │   └── config.py       # Environment variables and configuration
+│   ├── core/               # Main components
 │   │   ├── __init__.py
-│   │   └── main.py         # Punkt wejścia aplikacji
-│   ├── models/             # Modele danych
+│   │   └── main.py         # Application entry point
+│   ├── models/             # Data models
 │   │   ├── __init__.py
 │   │   └── models.py       # Post, ColumnMapper
-│   ├── services/           # Logika biznesowa
+│   ├── services/           # Business logic
 │   │   ├── __init__.py
 │   │   ├── services.py     # DataService, ImageService, etc.
 │   │   ├── scheduler.py    # Scheduler, TestScheduler
-│   │   └── monitoring.py   # Health check, metryki
-│   ├── integrations/       # Integracje zewnętrzne
+│   │   └── monitoring.py   # Health check, metrics
+│   ├── integrations/       # External integrations
 │   │   ├── __init__.py
 │   │   ├── instagram.py    # Instagram API
 │   │   ├── google_sheets.py # Google Sheets API
-│   │   └── telegram_bot.py # Powiadomienia Telegram
-│   └── utils/              # Narzędzia pomocnicze
+│   │   └── telegram_bot.py # Telegram notifications
+│   └── utils/              # Helper utilities
 │       ├── __init__.py
 │       ├── utils.py        # Retry, rate limiting
-│       ├── security.py     # Walidacja, bezpieczeństwo
-│       └── image_utils.py  # Przetwarzanie obrazów
-└── tests/                  # Testy jednostkowe
+│       ├── security.py     # Validation, security
+│       └── image_utils.py  # Image processing
+└── tests/                  # Unit tests
     ├── test_models.py
     ├── test_services.py
     ├── test_google_sheets.py
@@ -297,107 +292,106 @@ python src/core/main.py --help
     └── test_graceful_shutdown.py
 ```
 
-## 🏗️ Architektura
+## 🏗️ Architecture
 
-Projekt został zrefaktoryzowany z monolitycznej struktury na modularną architekturę z separacją odpowiedzialności:
+The project has been refactored from a monolithic structure to a modular architecture with separation of responsibilities:
 
-### 📦 Moduły
+### 📦 Modules
+- **src/config/** - Environment and logging configuration management
+- **src/models/** - Data models (Post, ColumnMapper)
+- **src/services/** - Business logic (DataService, ImageService, NotificationService, PublisherService, Scheduler, Monitoring)
+- **src/integrations/** - External integrations (Instagram, Google Sheets, Telegram)
+- **src/utils/** - Helper utilities (retry, rate limiting, security, image processing)
+- **src/core/** - Main application entry point
+- **tests/** - Comprehensive unit tests
 
-- **`src/config/`** - Zarządzanie konfiguracją środowiska i logowania
-- **`src/models/`** - Modele danych (`Post`, `ColumnMapper`)
-- **`src/services/`** - Logika biznesowa (`DataService`, `ImageService`, `NotificationService`, `PublisherService`, `Scheduler`, `Monitoring`)
-- **`src/integrations/`** - Integracje zewnętrzne (Instagram, Google Sheets, Telegram)
-- **`src/utils/`** - Narzędzia pomocnicze (retry, rate limiting, bezpieczeństwo, przetwarzanie obrazów)
-- **`src/core/`** - Główny punkt wejścia aplikacji
-- **`tests/`** - Kompleksowe testy jednostkowe
+### 🎯 Architecture Principles
+- **Single Responsibility Principle** - each module has one responsibility
+- **Dependency Injection** - loose coupling between components
+- **Separation of Concerns** - clear separation of layers
+- **Testability** - each component is independently testable
 
-### 🎯 Zasady architektury
-- **Single Responsibility Principle** - każdy moduł ma jedną odpowiedzialność
-- **Dependency Injection** - luźne powiązania między komponentami
-- **Separation of Concerns** - wyraźne rozdzielenie warstw
-- **Testability** - każdy komponent jest testowalny niezależnie
+### Refactoring Benefits:
+- ✅ Modular structure with clear separation of responsibilities
+- ✅ Easier testing and debugging
+- ✅ Better scalability and extensibility
+- ✅ Cleaner and more maintainable code
+- ✅ Compliance with Python best practices
+- ✅ Preparation for future application development
 
-### Korzyści refaktoryzacji:
-- ✅ Modularna struktura z wyraźną separacją odpowiedzialności
-- ✅ Łatwiejsze testowanie i debugowanie
-- ✅ Lepsza skalowalność i możliwość rozszerzania
-- ✅ Czytelniejszy i łatwiejszy w utrzymaniu kod
-- ✅ Zgodność z najlepszymi praktykami Python
-- ✅ Przygotowanie do dalszego rozwoju aplikacji
-
-## ⚙️ Konfiguracja API
+## ⚙️ API Configuration
 
 ### Google Sheets API
-1. Przejdź do [Google Cloud Console](https://console.cloud.google.com/)
-2. Utwórz nowy projekt lub wybierz istniejący
-3. Włącz Google Sheets API
-4. Utwórz klucz API i dodaj go do `.env`
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable Google Sheets API
+4. Create an API key and add it to .env
 
-### Telegram Bot (opcjonalnie)
-1. Napisz do [@BotFather](https://t.me/botfather) na Telegramie
-2. Utwórz nowego bota poleceniem `/newbot`
-3. Skopiuj token i dodaj do `.env`
-4. Znajdź swoje Chat ID i dodaj do `.env`
+### Telegram Bot (optional)
+1. Message [@BotFather](https://t.me/botfather) on Telegram
+2. Create a new bot with the /newbot command
+3. Copy the token and add it to .env
+4. Find your Chat ID and add it to .env
 
-## 🕐 Harmonogram
+## 🕐 Schedule
 
-Domyślnie system sprawdza posty do publikacji codziennie o **16:00**. 
-Można to zmienić w pliku `scheduler.py` w metodzie `run()` klasy `Scheduler`:
+By default, the system checks for posts to publish daily at **4:00 PM**. This can be changed in the scheduler.py file in the run() method of the Scheduler class:
+
 ```python
-target_time = dt_time(16, 0)  # Zmień na wybraną godzinę
+target_time = dt_time(16, 0)  # Change to your desired time
 ```
 
-## 🖼️ Obsługiwane formaty obrazów
+## 🖼️ Supported Image Formats
 
 - JPG, JPEG, PNG, WEBP
-- Automatyczne dostosowanie proporcji do wymagań Instagram
-- Obsługa URL (w tym Google Drive)
-- Lokalne pliki z folderu `images/`
+- Automatic proportion adjustment for Instagram requirements
+- URL support (including Google Drive)
+- Local files from images/ folder
 
-## 📝 Obsługiwane formaty dat
+## 📝 Supported Date Formats
 
-- `DD.MM.YYYY` (np. 08.08.2025)
-- `DD/MM/YYYY` (np. 08/08/2025)
-- `YYYY-MM-DD` (np. 2025-08-08)
-- `DD-MM-YYYY` (np. 08-08-2025)
-- Liczby (serial date number z Excel/Google Sheets)
+- DD.MM.YYYY (e.g., 08.08.2025)
+- DD/MM/YYYY (e.g., 08/08/2025)
+- YYYY-MM-DD (e.g., 2025-08-08)
+- DD-MM-YYYY (e.g., 08-08-2025)
+- Numbers (serial date number from Excel/Google Sheets)
 
-## 🚨 Uwagi bezpieczeństwa
+## 🚨 Security Notes
 
-- **Nigdy nie commituj pliku `.env`** do repozytorium
-- Używaj silnych haseł dla konta Instagram
-- Regularnie zmieniaj klucze API
-- Monitoruj aktywność konta Instagram
+- **Never commit the .env file** to the repository
+- Use strong passwords for Instagram account
+- Regularly change API keys
+- Monitor Instagram account activity
 
-## 🐛 Rozwiązywanie problemów
+## 🐛 Troubleshooting
 
-### Błędy logowania Instagram
-- Sprawdź poprawność danych logowania
-- Instagram może wymagać weryfikacji dwuetapowej
-- Unikaj zbyt częstego logowania (może prowadzić do blokady)
+### Instagram Login Errors
+- Check login credentials correctness
+- Instagram may require two-factor authentication
+- Avoid too frequent logins (may lead to blocking)
 
-### Błędy Google Sheets API
-- Sprawdź czy arkusz jest publiczny lub udostępniony
-- Zweryfikuj poprawność Google Sheet ID w pliku `.env`
-- Upewnij się, że API Key ma odpowiednie uprawnienia
-- Sprawdź czy kolumny w arkuszu mają poprawne nazwy
+### Google Sheets API Errors
+- Check if the sheet is public or shared
+- Verify the Google Sheet ID correctness in .env file
+- Make sure the API Key has appropriate permissions
+- Check if columns in the sheet have correct names
 
-### Problemy z obrazami
-- Sprawdź czy URL jest dostępny publicznie
-- Upewnij się, że format obrazu jest obsługiwany
-- Sprawdź czy folder `images/` istnieje dla lokalnych plików
+### Image Issues
+- Check if URL is publicly accessible
+- Make sure the image format is supported
+- Check if images/ folder exists for local files
 
-## 📄 Licencja
+## 📄 License
 
-Ten projekt jest udostępniony na licencji MIT.
+This project is released under the MIT License.
 
-## 🤝 Wsparcie
+## 🤝 Support
 
-W przypadku problemów:
-1. Sprawdź logi w konsoli
-2. Przetestuj komponenty osobno (`python main.py test`)
-3. Sprawdź konfigurację w pliku `.env`
+In case of issues:
+1. Check logs in console
+2. Test components separately (python main.py test)
+3. Check configuration in .env file
 
 ---
 
-**⚠️ Disclaimer:** Używaj tego narzędzia zgodnie z regulaminem Instagram. Autor nie ponosi odpowiedzialności za ewentualne blokady konta.
+**⚠️ Disclaimer:** Use this tool in accordance with Instagram's terms of service. The author is not responsible for any potential account blocks.
