@@ -1,4 +1,4 @@
-# Instagram Auto Publisher 📸
+# Instagram Auto Publisher 📸 
 
 Automatyczny system publikacji postów na Instagramie na podstawie harmonogramu z Google Sheets.
 
