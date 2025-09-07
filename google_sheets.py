@@ -1,13 +1,10 @@
 import requests
 import re
 from datetime import datetime, timedelta
-from typing import Optional, Union, Any, List, Dict
-from src.config import GOOGLE_API_KEY, GOOGLE_SHEET_ID, logger
-from src.utils import retry_with_backoff, google_sheets_rate_limiter
-from src.utils.security import InputValidator, ValidationResult
+from config import GOOGLE_API_KEY, GOOGLE_SHEET_ID, logger
 
 
-def gdrive_to_direct(url: str) -> str:
+def gdrive_to_direct(url):
     """Konwertuje URL Google Drive na bezpośredni link do pobierania"""
     match = re.search(r'/d/([a-zA-Z0-9_-]+)', url)
     if match:
@@ -16,48 +13,7 @@ def gdrive_to_direct(url: str) -> str:
     return url
 
 
-def validate_and_sanitize_sheet_data(raw_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Waliduje i sanityzuje dane z arkusza Google Sheets"""
-    validated_data = []
-    invalid_rows_count = 0
-    
-    for row_idx, row in enumerate(raw_data, start=2):  # Start from 2 because row 1 is headers
-        try:
-            # Sanityzuj wszystkie wartości tekstowe
-            sanitized_row = {}
-            for key, value in row.items():
-                if isinstance(value, str):
-                    # Usuń potencjalnie niebezpieczne znaki
-                    sanitized_value = re.sub(r'[<>"\';\\]', '', value.strip())
-                    # Ogranicz długość
-                    if len(sanitized_value) > 5000:
-                        sanitized_value = sanitized_value[:5000]
-                        logger.warning(f"Skrócono zbyt długą wartość w wierszu {row_idx}, kolumna '{key}'")
-                    sanitized_row[key] = sanitized_value
-                else:
-                    sanitized_row[key] = value
-            
-            # Sprawdź czy wiersz zawiera wymagane dane
-            has_content = any(str(value).strip() for value in sanitized_row.values() if value)
-            
-            if has_content:
-                validated_data.append(sanitized_row)
-            else:
-                logger.debug(f"Pominięto pusty wiersz {row_idx}")
-                
-        except Exception as e:
-            invalid_rows_count += 1
-            logger.warning(f"Błąd podczas walidacji wiersza {row_idx}: {e}")
-            continue
-    
-    if invalid_rows_count > 0:
-        logger.warning(f"Pominięto {invalid_rows_count} nieprawidłowych wierszy podczas walidacji")
-    
-    logger.info(f"Zwalidowano {len(validated_data)} wierszy z {len(raw_data)} oryginalnych")
-    return validated_data
-
-
-def parsuj_date_value(date_value: Union[str, int, float, None]) -> Optional[datetime]:
+def parsuj_date_value(date_value):
     """Parsuje wartość daty z Google Sheets (może być string lub liczba)"""
     if not date_value:
         return None
@@ -100,16 +56,9 @@ def parsuj_date_value(date_value: Union[str, int, float, None]) -> Optional[date
     return None
 
 
-@retry_with_backoff(
-    max_retries=3,
-    base_delay=2.0,
-    exceptions=(requests.RequestException, requests.HTTPError)
-)
-def pobierz_zdjecia_z_arkusza(sheet_id: str) -> Dict[str, str]:
-    """Pobiera wszystkie zdjęcia z arkusza Google Sheets z retry mechanism"""
+def pobierz_zdjecia_z_arkusza(sheet_id):
+    """Pobiera wszystkie zdjęcia z arkusza Google Sheets"""
     try:
-        google_sheets_rate_limiter.wait_if_needed()
-        
         # Pobierz metadane arkusza zawierające informacje o obrazkach
         url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}"
         params = {
@@ -117,7 +66,7 @@ def pobierz_zdjecia_z_arkusza(sheet_id: str) -> Dict[str, str]:
             'includeGridData': 'true'
         }
 
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, params=params)
         response.raise_for_status()
 
         data = response.json()
@@ -150,7 +99,7 @@ def pobierz_zdjecia_z_arkusza(sheet_id: str) -> Dict[str, str]:
         return {}
 
 
-def znajdz_zdjecie_dla_wiersza(sheet_id: str, row_index: int) -> Optional[str]:
+def znajdz_zdjecie_dla_wiersza(sheet_id, row_index):
     """Znajduje zdjęcie dla konkretnego wiersza"""
     try:
         # Pobierz wszystkie obrazki z arkusza
@@ -176,23 +125,16 @@ def znajdz_zdjecie_dla_wiersza(sheet_id: str, row_index: int) -> Optional[str]:
         return None
 
 
-@retry_with_backoff(
-    max_retries=3,
-    base_delay=2.0,
-    exceptions=(requests.RequestException, requests.HTTPError)
-)
-def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
-    """Wczytuje dane z arkusza Google Sheets z retry mechanism"""
+def wczytaj_arkusz(sheet_id):
+    """Wczytuje dane z arkusza Google Sheets używając Google API Key"""
     try:
-        google_sheets_rate_limiter.wait_if_needed()
-        
         url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/A:Z"
         params = {
             'key': GOOGLE_API_KEY,
             'valueRenderOption': 'FORMATTED_VALUE'  # Zmieniono na FORMATTED_VALUE dla lepszego parsowania dat
         }
 
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, params=params)
         response.raise_for_status()
 
         data = response.json()
@@ -209,7 +151,6 @@ def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
         logger.info(f"Nagłówki arkusza: {headers}")
 
         # Przetwórz pozostałe wiersze
-        raw_data = []
         for row_idx, row in enumerate(values[1:], start=1):
             row_dict = {}
             for i, header in enumerate(headers):
@@ -217,16 +158,11 @@ def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
                     row_dict[header] = row[i]
                 else:
                     row_dict[header] = ''
-            raw_data.append(row_dict)
-            logger.debug(f"Wiersz {row_idx + 1}: {row_dict}")
+            dane.append(row_dict)
+            logger.info(f"Wiersz {row_idx + 1}: {row_dict}")
 
-        logger.info(f"Wczytano {len(raw_data)} surowych wierszy z arkusza")
-        
-        # Waliduj i sanityzuj dane
-        validated_data = validate_and_sanitize_sheet_data(raw_data)
-        
-        logger.info(f"Zwrócono {len(validated_data)} zwalidowanych wierszy z arkusza")
-        return validated_data
+        logger.info(f"Wczytano {len(dane)} wierszy z arkusza używając API Key")
+        return dane
 
     except requests.exceptions.RequestException as e:
         logger.error(f"Błąd HTTP podczas wczytywania arkusza: {e}")
@@ -236,7 +172,7 @@ def wczytaj_arkusz(sheet_id: str) -> List[Dict[str, Any]]:
         raise
 
 
-def test_parsowania_dat() -> None:
+def test_parsowania_dat():
     """Testuje parsowanie dat z arkusza"""
     try:
         dane = wczytaj_arkusz(GOOGLE_SHEET_ID)
