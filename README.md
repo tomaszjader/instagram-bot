@@ -1,158 +1,163 @@
-# Instagram Auto Publisher 📸
+# Instagram Auto Publisher
 
-Automatyczny system publikacji postów na Instagramie na podstawie harmonogramu z Google Sheets.
+An automated Instagram posting system that publishes content based on a schedule stored in Google Sheets. The application uses Google API (without Service Account) and includes Telegram notifications for monitoring.
 
-## 🚀 Funkcje
+## Features
 
-- ⏰ Automatyczna publikacja postów według harmonogramu
-- 📊 Integracja z Google Sheets jako źródło danych
-- 🖼️ Automatyczne przetwarzanie obrazów (proporcje Instagram)
-- 📱 Powiadomienia Telegram o statusie publikacji
-- 🔄 Obsługa różnych formatów dat
-- 🌐 Pobieranie obrazów z URL (w tym Google Drive)
+- 📅 **Automated Scheduling**: Posts are scheduled via Google Sheets
+- 📸 **Instagram Integration**: Automatic posting to Instagram using instagrapi
+- 📊 **Google Sheets Integration**: Schedule management through Google Sheets API
+- 📱 **Telegram Notifications**: Real-time notifications about posting status
+- 🖼️ **Image Processing**: Built-in image utilities for post preparation
+- 🧪 **Testing Suite**: Comprehensive testing for all components
+- 📝 **Logging**: Detailed logging with colored output
 
-## 📋 Wymagania
+## Prerequisites
 
-- Python 3.8+
-- Konto Instagram
-- Google Sheets API Key
-- Bot Telegram (opcjonalnie)
+- Python 3.7+
+- Instagram account
+- Google Sheets API access
+- Telegram Bot (optional, for notifications)
 
-## 🛠️ Instalacja
+## Installation
 
-1. **Sklonuj repozytorium:**
+1. **Clone the repository**:
    ```bash
    git clone <repository-url>
    cd pythonProject57
    ```
 
-2. **Zainstaluj zależności:**
+2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Utwórz plik `.env` z konfiguracją:**
+3. **Set up environment variables**:
+   Create a `.env` file in the project root with the following variables:
    ```env
-   INSTA_USERNAME=twoja_nazwa_uzytkownika
-   INSTA_PASSWORD=twoje_haslo
-   GOOGLE_SHEET_ID=id_arkusza_google
-   GOOGLE_API_KEY=twoj_klucz_api_google
-   TELEGRAM_BOT_TOKEN=token_bota_telegram
-   TELEGRAM_CHAT_ID=id_czatu_telegram
+   INSTA_USERNAME=your_instagram_username
+   INSTA_PASSWORD=your_instagram_password
+   GOOGLE_SHEET_ID=your_google_sheet_id
+   GOOGLE_API_KEY=your_google_api_key
+   TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+   TELEGRAM_CHAT_ID=your_telegram_chat_id
    ```
 
-## 📊 Konfiguracja Google Sheets
+## Configuration
 
-Arkusz powinien zawierać kolumny:
-- `data_publikacji` - data publikacji (DD.MM.YYYY lub inne obsługiwane formaty)
-- `tresc_postu` - treść posta
-- `tagi` - hashtagi (opcjonalnie)
-- `sciezka_zdjecia` - URL lub ścieżka do zdjęcia
-- `czy_opublikowano` - status publikacji (TRUE/FALSE)
+### Google Sheets Setup
 
-## 🎯 Użycie
+1. Create a Google Sheet with your posting schedule
+2. Get your Google Sheets API key from Google Cloud Console
+3. Share your sheet with the API or make it publicly readable
+4. Copy the Sheet ID from the URL
 
-### Uruchomienie harmonogramu
+### Telegram Setup (Optional)
+
+1. Create a Telegram bot via @BotFather
+2. Get your bot token
+3. Get your chat ID (you can use @userinfobot)
+
+## Usage
+
+### Run the Scheduler
 ```bash
 python main.py
 ```
 
-### Test publikacji
+### Test Publication
 ```bash
 python main.py test
 ```
 
-### Test parsowania dat
+### Test Date Parsing
 ```bash
 python main.py dates
 ```
 
-## 📁 Struktura projektu
+## Project Structure
 
 ```
-├── main.py              # Główny plik uruchomieniowy
-├── config.py            # Konfiguracja i zmienne środowiskowe
-├── scheduler.py         # Logika harmonogramowania
-├── instagram.py         # Integracja z Instagram API
-├── google_sheets.py     # Integracja z Google Sheets API
-├── telegram_bot.py      # Powiadomienia Telegram
-├── image_utils.py       # Przetwarzanie obrazów
-├── test_functions.py    # Funkcje testowe
-└── requirements.txt     # Zależności projektu
+├── main.py              # Main entry point
+├── scheduler.py         # Scheduling logic
+├── instagram.py         # Instagram API integration
+├── google_sheets.py     # Google Sheets API integration
+├── telegram_bot.py      # Telegram notifications
+├── image_utils.py       # Image processing utilities
+├── config.py           # Configuration and environment variables
+├── test_functions.py   # Testing utilities
+├── requirements.txt    # Python dependencies
+└── README.md          # This file
 ```
 
-## ⚙️ Konfiguracja API
+## Dependencies
 
-### Google Sheets API
-1. Przejdź do [Google Cloud Console](https://console.cloud.google.com/)
-2. Utwórz nowy projekt lub wybierz istniejący
-3. Włącz Google Sheets API
-4. Utwórz klucz API i dodaj go do `.env`
+### Core Dependencies
+- `instagrapi==2.0.0` - Instagram API client
+- `requests==2.31.0` - HTTP requests
+- `python-dotenv==1.0.0` - Environment variable management
+- `Pillow==10.0.0` - Image processing
 
-### Telegram Bot (opcjonalnie)
-1. Napisz do [@BotFather](https://t.me/botfather) na Telegramie
-2. Utwórz nowego bota poleceniem `/newbot`
-3. Skopiuj token i dodaj do `.env`
-4. Znajdź swoje Chat ID i dodaj do `.env`
+### Google Sheets Integration
+- `google-api-python-client==2.108.0`
+- `google-auth==2.23.4`
+- `google-auth-oauthlib==1.1.0`
+- `google-auth-httplib2==0.1.1`
 
-## 🕐 Harmonogram
+### Development Tools
+- `pytest==7.4.3` - Testing framework
+- `black==23.9.1` - Code formatting
+- `flake8==6.1.0` - Code linting
+- `coloredlogs==15.0.1` - Enhanced logging
 
-Domyślnie system sprawdza posty do publikacji codziennie o **16:00**. 
-Można to zmienić w pliku `scheduler.py` w linii:
-```python
-target_time = dt_time(16, 0)  # Zmień na wybraną godzinę
-```
+## Error Handling
 
-## 🖼️ Obsługiwane formaty obrazów
+The application includes comprehensive error handling and logging:
+- All critical errors are logged with detailed information
+- Telegram notifications for posting status
+- Graceful handling of API rate limits
+- Configuration validation on startup
 
-- JPG, JPEG, PNG, WEBP
-- Automatyczne dostosowanie proporcji do wymagań Instagram
-- Obsługa URL (w tym Google Drive)
-- Lokalne pliki z folderu `images/`
+## Security Notes
 
-## 📝 Obsługiwane formaty dat
+- Never commit your `.env` file to version control
+- Use strong passwords for your Instagram account
+- Consider using Instagram's official API when available
+- Regularly rotate your API keys and tokens
 
-- `DD.MM.YYYY` (np. 08.08.2025)
-- `DD/MM/YYYY` (np. 08/08/2025)
-- `YYYY-MM-DD` (np. 2025-08-08)
-- `DD-MM-YYYY` (np. 08-08-2025)
-- Liczby (serial date number z Excel/Google Sheets)
+## Contributing
 
-## 🚨 Uwagi bezpieczeństwa
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `pytest`
+5. Format code: `black .`
+6. Check linting: `flake8`
+7. Submit a pull request
 
-- **Nigdy nie commituj pliku `.env`** do repozytorium
-- Używaj silnych haseł dla konta Instagram
-- Regularnie zmieniaj klucze API
-- Monitoruj aktywność konta Instagram
+## License
 
-## 🐛 Rozwiązywanie problemów
+This project is for educational purposes. Please ensure compliance with Instagram's Terms of Service and API usage policies.
 
-### Błędy logowania Instagram
-- Sprawdź poprawność danych logowania
-- Instagram może wymagać weryfikacji dwuetapowej
-- Unikaj zbyt częstego logowania (może prowadzić do blokady)
+## Troubleshooting
 
-### Błędy Google Sheets API
-- Sprawdź czy arkusz jest publiczny lub udostępniony
-- Zweryfikuj poprawność Google Sheet ID
-- Upewnij się, że API Key ma odpowiednie uprawnienia
+### Common Issues
 
-### Problemy z obrazami
-- Sprawdź czy URL jest dostępny publicznie
-- Upewnij się, że format obrazu jest obsługiwany
-- Sprawdź czy folder `images/` istnieje dla lokalnych plików
+1. **Instagram Login Issues**:
+   - Check username/password
+   - Instagram may require 2FA or manual verification
+   - Consider using app-specific passwords
 
-## 📄 Licencja
+2. **Google Sheets Access**:
+   - Verify API key permissions
+   - Check sheet sharing settings
+   - Ensure correct Sheet ID
 
-Ten projekt jest udostępniony na licencji MIT.
+3. **Telegram Notifications**:
+   - Verify bot token
+   - Check chat ID format
+   - Ensure bot has permission to send messages
 
-## 🤝 Wsparcie
+## Support
 
-W przypadku problemów:
-1. Sprawdź logi w konsoli
-2. Przetestuj komponenty osobno (`python main.py test`)
-3. Sprawdź konfigurację w pliku `.env`
-
----
-
-**⚠️ Disclaimer:** Używaj tego narzędzia zgodnie z regulaminem Instagram. Autor nie ponosi odpowiedzialności za ewentualne blokady konta.
+For issues and questions, please check the logs first. The application provides detailed logging to help diagnose problems.
